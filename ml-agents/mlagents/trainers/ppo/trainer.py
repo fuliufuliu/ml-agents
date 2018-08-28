@@ -4,6 +4,7 @@
 
 import logging
 import os
+from collections import deque
 
 import numpy as np
 import tensorflow as tf
@@ -20,7 +21,7 @@ class PPOTrainer(Trainer):
     """The PPOTrainer is an implementation of the PPO algorithm."""
     action_masking_name = 'action_masks'
     
-    def __init__(self, sess, env, brain_name, trainer_parameters, training, seed, run_id):
+    def __init__(self, sess, env, brain_name, reward_buff_cap, trainer_parameters, training, seed, run_id):
         """
         Responsible for collecting experiences and training PPO model.
         :param sess: Tensorflow session.
@@ -85,6 +86,7 @@ class PPOTrainer(Trainer):
 
         self.training_buffer = Buffer()
         self.cumulative_rewards = {}
+        self._reward_buffer = deque(maxlen=reward_buff_cap)
         self.episode_steps = {}
         self.is_continuous_action = (env.brains[brain_name].vector_action_space_type == "continuous")
         self.use_visual_obs = (env.brains[brain_name].number_visual_observations > 0)
@@ -145,6 +147,16 @@ class PPOTrainer(Trainer):
         :return: the new last reward
         """
         return self.sess.run(self.model.last_reward)
+
+    @property
+    def reward_buffer(self):
+        """
+        Returns the reward buffer. The reward buffer contains the cumulative
+        rewards of the most recent episodes completed by agents using this
+        trainer.
+        :return: the reward buffer.
+        """
+        return self._reward_buffer
 
     def increment_step_and_update_last_reward(self):
         """
@@ -407,6 +419,7 @@ class PPOTrainer(Trainer):
                 if info.local_done[l]:
                     self.stats['cumulative_reward'].append(
                         self.cumulative_rewards.get(agent_id, 0))
+                    self.reward_buffer.appendleft(self.cumulative_rewards.get(agent_id, 0))
                     self.stats['episode_length'].append(
                         self.episode_steps.get(agent_id, 0))
                     self.cumulative_rewards[agent_id] = 0

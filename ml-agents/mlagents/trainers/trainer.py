@@ -24,7 +24,7 @@ class Trainer(object):
         Responsible for collecting experiences and training a neural network model.
         :param sess: Tensorflow session.
         :param env: The UnityEnvironment.
-        :param  trainer_parameters: The parameters for the trainer (dictionary).
+        :param trainer_parameters: The parameters for the trainer (dictionary).
         :param training: Whether the trainer is set for training.
         """
         self.brain_name = brain_name
@@ -143,6 +143,7 @@ class Trainer(object):
                 logger.info(" {}: {}: Step: {}. Mean Reward: {:0.3f}. Std of Reward: {:0.3f}. {}"
                             .format(self.run_id, self.brain_name, min(self.get_step, self.get_max_steps),
                                     mean_reward, np.std(self.stats['cumulative_reward']), is_training))
+                print('mean of last 10 episodes:', np.mean(self.reward_buffer))
             else:
                 logger.info(" {}: {}: Step: {}. No episode was completed since last summary. {}"
                             .format(self.run_id, self.brain_name, self.get_step, is_training))
